@@ -1,12 +1,12 @@
-const Review = require('../models/ReviewSchema'); // Import Review model
+const Review = require("../models/ReviewSchema"); // Import Review model
 
 // Get all reviews
 const getAllReviews = async (req, res) => {
   try {
-    const reviews = await Review.find().populate('user_id', 'name');
+    const reviews = await Review.find().populate("user_id", "name");
     res.status(200).json({ success: true, reviews });
   } catch (error) {
-    res.status(500).json({ success: false, message: 'Server Error', error });
+    res.status(500).json({ success: false, message: "Server Error", error });
   }
 };
 
@@ -17,11 +17,13 @@ const getReviewsByUserId = async (req, res) => {
   try {
     const reviews = await Review.find({ user_id: userId });
     if (!reviews.length) {
-      return res.status(404).json({ success: false, message: 'No reviews found for this user' });
+      return res
+        .status(404)
+        .json({ success: false, message: "No reviews found for this user" });
     }
     res.status(200).json({ success: true, reviews });
   } catch (error) {
-    res.status(500).json({ success: false, message: 'Server Error', error });
+    res.status(500).json({ success: false, message: "Server Error", error });
   }
 };
 
@@ -32,11 +34,13 @@ const getReviewsByFoodId = async (req, res) => {
   try {
     const reviews = await Review.find({ food_id: foodId });
     if (!reviews.length) {
-      return res.status(404).json({ success: false, message: 'No reviews found for this food' });
+      return res
+        .status(404)
+        .json({ success: false, message: "No reviews found for this food" });
     }
     res.status(200).json({ success: true, reviews });
   } catch (error) {
-    res.status(500).json({ success: false, message: 'Server Error', error });
+    res.status(500).json({ success: false, message: "Server Error", error });
   }
 };
 
@@ -46,7 +50,9 @@ const addReview = async (req, res) => {
 
   try {
     if (rating < 0 || rating > 5) {
-      return res.status(400).json({ success: false, message: 'Rating must be between 0 and 5' });
+      return res
+        .status(400)
+        .json({ success: false, message: "Rating must be between 0 and 5" });
     }
 
     const newReview = await Review.create({
@@ -56,9 +62,25 @@ const addReview = async (req, res) => {
       food_id,
     });
 
-    res.status(201).json({ success: true, message: 'Review added successfully', review: newReview });
+    // Fetch all reviews for the food item
+    const reviews = await Review.find({ food_id });
+
+    // Calculate the new average rating
+    const totalRating = reviews.reduce((sum, review) => sum + review.rating, 0);
+    const averageRating = totalRating / reviews.length;
+
+    // Update the food item's rating
+    await Food.findByIdAndUpdate(food_id, { rating: averageRating });
+
+    res
+      .status(201)
+      .json({
+        success: true,
+        message: "Review added successfully",
+        review: newReview,
+      });
   } catch (error) {
-    res.status(500).json({ success: false, message: 'Server Error', error });
+    res.status(500).json({ success: false, message: "Server Error", error });
   }
 };
 
@@ -70,7 +92,8 @@ const updateReview = async (req, res) => {
     if (!rating && !review) {
       return res.status(400).json({
         success: false,
-        message: 'At least one field (rating or review) must be provided to update.',
+        message:
+          "At least one field (rating or review) must be provided to update.",
       });
     }
 
@@ -78,7 +101,7 @@ const updateReview = async (req, res) => {
     if (rating && (rating < 0 || rating > 5)) {
       return res.status(400).json({
         success: false,
-        message: 'Rating must be between 0 and 5.',
+        message: "Rating must be between 0 and 5.",
       });
     }
 
@@ -92,20 +115,20 @@ const updateReview = async (req, res) => {
     if (!updatedReview) {
       return res.status(404).json({
         success: false,
-        message: 'Review not found.',
+        message: "Review not found.",
       });
     }
 
     res.status(200).json({
       success: true,
-      message: 'Review updated successfully.',
+      message: "Review updated successfully.",
       data: updatedReview,
     });
   } catch (error) {
-    console.error('Error updating review:', error);
+    console.error("Error updating review:", error);
     res.status(500).json({
       success: false,
-      message: 'Server Error',
+      message: "Server Error",
       error,
     });
   }
@@ -121,25 +144,24 @@ const deleteReview = async (req, res) => {
     if (!deletedReview) {
       return res.status(404).json({
         success: false,
-        message: 'Review not found.',
+        message: "Review not found.",
       });
     }
 
     res.status(200).json({
       success: true,
-      message: 'Review deleted successfully.',
+      message: "Review deleted successfully.",
       data: deletedReview,
     });
   } catch (error) {
-    console.error('Error deleting review:', error);
+    console.error("Error deleting review:", error);
     res.status(500).json({
       success: false,
-      message: 'Server Error',
+      message: "Server Error",
       error,
     });
   }
 };
-
 
 module.exports = {
   getAllReviews,
@@ -147,5 +169,5 @@ module.exports = {
   getReviewsByFoodId,
   addReview,
   updateReview,
-  deleteReview
+  deleteReview,
 };

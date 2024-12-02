@@ -1,4 +1,4 @@
-const mongoose = require('mongoose');
+const mongoose = require("mongoose");
 
 // Define the Food schema
 const foodSchema = new mongoose.Schema(
@@ -23,9 +23,6 @@ const foodSchema = new mongoose.Schema(
     rating: {
       type: Number,
     },
-    review: {
-      type: String,
-    },
     latitude: {
       type: Number,
       required: true,
@@ -36,7 +33,7 @@ const foodSchema = new mongoose.Schema(
     },
     user_id: {
       type: mongoose.Schema.Types.ObjectId,
-      ref: 'User', // Reference to the User schema
+      ref: "User", // Reference to the User schema
     },
   },
   {
@@ -45,6 +42,6 @@ const foodSchema = new mongoose.Schema(
 );
 
 // Create the Food model
-const Food = mongoose.model('Food', foodSchema);
+const Food = mongoose.model("Food", foodSchema);
 
 module.exports = Food;

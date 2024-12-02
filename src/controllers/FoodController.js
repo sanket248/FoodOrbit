@@ -1,12 +1,22 @@
-const Food = require('../models/FoodSchema'); // Import Food model
+const Food = require("../models/FoodSchema"); // Import Food model
+const Review = require("../models/ReviewSchema");
 
 // Create a food item
 const createFood = async (req, res) => {
-  const { name, shop_name, category, description, address, rating, review, latitude, longitude } = req.body;
+  const {
+    name,
+    shop_name,
+    category,
+    description,
+    address,
+    rating,
+    review,
+    latitude,
+    longitude,
+  } = req.body;
   const userId = req.user_id;
 
   try {
-
     if (name && address && latitude && longitude) {
       const newFood = await Food.create({
         name,
@@ -15,20 +25,28 @@ const createFood = async (req, res) => {
         description,
         address,
         rating,
-        review,
         latitude,
         longitude,
         userId,
       });
 
-      res.status(201).json({ success: true, message: 'Food item created successfully', data: newFood });
-    }
-    else {
-      res.status(500).json({ success: false, message: 'Missing inputs' });
-    }
+      const newReview = await Review.create({
+        rating,
+        review,
+        user_id: userId,
+        food_id: newFood._id,
+      });
 
+      res.status(201).json({
+        success: true,
+        message: "Food item created successfully",
+        data: newFood,
+      });
+    } else {
+      res.status(500).json({ success: false, message: "Missing inputs" });
+    }
   } catch (error) {
-    res.status(500).json({ success: false, message: 'Server Error', error });
+    res.status(500).json({ success: false, message: "Server Error", error });
   }
 };
 
@@ -40,7 +58,7 @@ const editFood = async (req, res) => {
     if (!id) {
       return res.status(400).json({
         success: false,
-        message: 'Food ID is required.',
+        message: "Food ID is required.",
       });
     }
 
@@ -54,20 +72,20 @@ const editFood = async (req, res) => {
     if (!updatedFood) {
       return res.status(404).json({
         success: false,
-        message: 'Food not found.',
+        message: "Food not found.",
       });
     }
 
     res.status(200).json({
       success: true,
-      message: 'Food updated successfully.',
+      message: "Food updated successfully.",
       data: updatedFood,
     });
   } catch (error) {
-    console.error('Error updating food:', error);
+    console.error("Error updating food:", error);
     res.status(500).json({
       success: false,
-      message: 'Server Error',
+      message: "Server Error",
       error,
     });
   }
@@ -84,9 +102,7 @@ const getAllFoods = async (req, res) => {
     const startIndex = (page - 1) * limit;
 
     // Query the database with pagination
-    const foods = await Food.find()
-      .skip(startIndex)
-      .limit(limit);
+    const foods = await Food.find().skip(startIndex).limit(limit);
 
     // Get total document count for pagination metadata
     const total = await Food.countDocuments();
@@ -103,7 +119,7 @@ const getAllFoods = async (req, res) => {
       },
     });
   } catch (error) {
-    res.status(500).json({ success: false, message: 'Server Error', error });
+    res.status(500).json({ success: false, message: "Server Error", error });
   }
 };
 
@@ -114,33 +130,59 @@ const getFoodById = async (req, res) => {
   try {
     const food = await Food.findById(id);
     if (!food) {
-      return res.status(404).json({ success: false, message: 'Food item not found' });
+      return res
+        .status(404)
+        .json({ success: false, message: "Food item not found" });
     }
     res.status(200).json({ success: true, data: food });
   } catch (error) {
-    res.status(500).json({ success: false, message: 'Server Error', error });
+    res.status(500).json({ success: false, message: "Server Error", error });
   }
 };
 
 const getNearbyFoods = async (req, res) => {
   try {
-    const { latitude, longitude } = req.query; // Extract latitude and longitude from query params
+    const { latitude, longitude } = req.query;
 
     if (!latitude || !longitude) {
-      return res
-        .status(400)
-        .json({ success: false, message: 'Latitude and Longitude are required.' });
+      return res.status(400).json({
+        success: false,
+        message: "Latitude and Longitude are required.",
+      });
     }
 
-    const userLocation = [parseFloat(longitude), parseFloat(latitude)];
+    const userLatitude = parseFloat(latitude);
+    const userLongitude = parseFloat(longitude);
     const radiusInKm = 5; // Radius in kilometers
     const earthRadiusInKm = 6378.1; // Earth's radius in kilometers
 
+    // Convert radius to radians
+    const radiusInRadians = radiusInKm / earthRadiusInKm;
+
+    // Find foods within the radius using Haversine formula
     const nearbyFoods = await Food.find({
-      location: {
-        $geoWithin: {
-          $centerSphere: [userLocation, radiusInKm / earthRadiusInKm],
-        },
+      $expr: {
+        $lte: [
+          {
+            $sqrt: {
+              $add: [
+                {
+                  $pow: [
+                    { $subtract: [{ $toDouble: "$latitude" }, userLatitude] },
+                    2,
+                  ],
+                },
+                {
+                  $pow: [
+                    { $subtract: [{ $toDouble: "$longitude" }, userLongitude] },
+                    2,
+                  ],
+                },
+              ],
+            },
+          },
+          radiusInRadians,
+        ],
       },
     });
 
@@ -149,10 +191,10 @@ const getNearbyFoods = async (req, res) => {
       data: nearbyFoods,
     });
   } catch (error) {
-    console.error('Error finding nearby foods:', error);
+    console.error("Error finding nearby foods:", error);
     res.status(500).json({
       success: false,
-      message: 'Server Error',
+      message: "Server Error",
       error,
     });
   }
@@ -165,7 +207,7 @@ const getFoodByUser = async (req, res) => {
     if (!userId) {
       return res.status(400).json({
         success: false,
-        message: 'User ID is required.',
+        message: "User ID is required.",
       });
     }
 
@@ -176,7 +218,7 @@ const getFoodByUser = async (req, res) => {
     if (userFoods.length === 0) {
       return res.status(404).json({
         success: false,
-        message: 'No foods found for the given user.',
+        message: "No foods found for the given user.",
       });
     }
 
@@ -185,10 +227,10 @@ const getFoodByUser = async (req, res) => {
       data: userFoods,
     });
   } catch (error) {
-    console.error('Error fetching foods by user:', error);
+    console.error("Error fetching foods by user:", error);
     res.status(500).json({
       success: false,
-      message: 'Server Error',
+      message: "Server Error",
       error,
     });
   }
@@ -198,19 +240,19 @@ const searchFood = async (req, res) => {
   try {
     const { query } = req.query; // Get the search query from request query parameters
 
-    if (!query || query.trim() === '') {
+    if (!query || query.trim() === "") {
       return res.status(400).json({
         success: false,
-        message: 'Search query is required.',
+        message: "Search query is required.",
       });
     }
 
     // Perform a case-insensitive search on `name`, `category`, and `shop_name` fields
     const matchedFoods = await Food.find({
       $or: [
-        { name: { $regex: query, $options: 'i' } },
-        { category: { $regex: query, $options: 'i' } },
-        { shop_name: { $regex: query, $options: 'i' } },
+        { name: { $regex: query, $options: "i" } },
+        { category: { $regex: query, $options: "i" } },
+        { shop_name: { $regex: query, $options: "i" } },
       ],
     });
 
@@ -218,7 +260,7 @@ const searchFood = async (req, res) => {
     if (matchedFoods.length === 0) {
       return res.status(404).json({
         success: false,
-        message: 'No foods matched your search.',
+        message: "No foods matched your search.",
       });
     }
 
@@ -227,10 +269,10 @@ const searchFood = async (req, res) => {
       data: matchedFoods,
     });
   } catch (error) {
-    console.error('Error searching for foods:', error);
+    console.error("Error searching for foods:", error);
     res.status(500).json({
       success: false,
-      message: 'Server Error',
+      message: "Server Error",
       error,
     });
   }
@@ -243,7 +285,7 @@ const deleteFood = async (req, res) => {
     if (!id) {
       return res.status(400).json({
         success: false,
-        message: 'Food ID is required.',
+        message: "Food ID is required.",
       });
     }
 
@@ -253,24 +295,23 @@ const deleteFood = async (req, res) => {
     if (!deletedFood) {
       return res.status(404).json({
         success: false,
-        message: 'Food not found.',
+        message: "Food not found.",
       });
     }
 
     res.status(200).json({
       success: true,
-      message: 'Food deleted successfully.',
+      message: "Food deleted successfully.",
     });
   } catch (error) {
-    console.error('Error deleting food:', error);
+    console.error("Error deleting food:", error);
     res.status(500).json({
       success: false,
-      message: 'Server Error',
+      message: "Server Error",
       error,
     });
   }
 };
-
 
 module.exports = {
   createFood,
@@ -280,5 +321,5 @@ module.exports = {
   getFoodByUser,
   searchFood,
   editFood,
-  deleteFood
+  deleteFood,
 };

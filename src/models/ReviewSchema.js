@@ -1,4 +1,4 @@
-const mongoose = require('mongoose');
+const mongoose = require("mongoose");
 
 // Define the Review schema
 const reviewSchema = new mongoose.Schema(
@@ -7,7 +7,7 @@ const reviewSchema = new mongoose.Schema(
       type: Number,
       required: true,
       min: 0,
-      max: 5, // Ensure rating is between 0 and 5
+      max: 5,
     },
     review: {
       type: String,
@@ -15,12 +15,12 @@ const reviewSchema = new mongoose.Schema(
     },
     user_id: {
       type: mongoose.Schema.Types.ObjectId,
-      ref: 'User', // Reference to the User schema
+      ref: "User", // Reference to the User schema
       required: true,
     },
     food_id: {
       type: mongoose.Schema.Types.ObjectId,
-      ref: 'Food', // Reference to the Food schema
+      ref: "Food", // Reference to the Food schema
       required: true,
     },
   },
@@ -30,6 +30,6 @@ const reviewSchema = new mongoose.Schema(
 );
 
 // Create the Review model
-const Review = mongoose.model('Review', reviewSchema);
+const Review = mongoose.model("Review", reviewSchema);
 
 module.exports = Review;
